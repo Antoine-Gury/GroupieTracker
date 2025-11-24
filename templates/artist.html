@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Artist.Name}} · Groupie Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="header">
+      <div class="container detail-header">
+        <div>
+          <a class="back" href="/">← Retour</a>
+          <h1>{{.Artist.Name}}</h1>
+          <p>Membres&nbsp;: {{joinMembers .Artist.Members}}</p>
+        </div>
+        <div class="meta">
+          <p>Création&nbsp;: {{.Artist.CreationDate}}</p>
+          <p>Premier album&nbsp;: {{formatDate .Artist.FirstAlbum}}</p>
+          <p>Nombre de concerts connus&nbsp;: {{len .Artist.ConcertDates}}</p>
+        </div>
+      </div>
+    </header>
+    <main class="container detail">
+      <section class="hero">
+        <img src="{{.Artist.Image}}" alt="Photo de {{.Artist.Name}}">
+        <div class="hero-body">
+          <h2>Localisations référencées</h2>
+          <ul>
+            {{range .Artist.Locations}}
+            <li>{{formatLocation .}}</li>
+            {{else}}
+            <li>Aucune information.</li>
+            {{end}}
+          </ul>
+          <h2>Dates de concerts</h2>
+          <ul class="dates">
+            {{range .Artist.ConcertDates}}
+            <li>{{formatDate .}}</li>
+            {{else}}
+            <li>Aucune date publiée.</li>
+            {{end}}
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h2>Relation dates / lieux</h2>
+        {{if .LocationDates}}
+        <div class="relations">
+          {{range .LocationDates}}
+          <article>
+            <header>
+              <strong>{{.Pretty}}</strong>
+              <span>{{.Count}} date{{if ne .Count 1}}s{{end}}</span>
+            </header>
+            <ul>
+              {{range .Dates}}
+              <li>{{formatDate .}}</li>
+              {{else}}
+              <li>Aucune date.</li>
+              {{end}}
+            </ul>
+          </article>
+          {{end}}
+        </div>
+        {{else}}
+        <p class="empty">Pas de lien géographique disponible.</p>
+        {{end}}
+      </section>
+    </main>
+    <footer class="footer">
+      <p>Propulsé par l'API <a href="https://groupietrackers.herokuapp.com/api">Groupie Tracker</a>.</p>
+    </footer>
+  </body>
+</html>
+

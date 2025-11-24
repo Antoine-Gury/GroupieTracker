@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Groupie Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <div class="brand">
+          <h1>Groupie Tracker</h1>
+          <p>Catalogue interactif des artistes fournis par l'API Groupie Tracker</p>
+        </div>
+        <form class="search-form" method="get" action="/">
+          <label>
+            <span class="sr-only">Recherche</span>
+            <input type="search" name="q" placeholder="Nom, membre, pays..." value="{{.Query}}">
+          </label>
+          <button type="submit">Rechercher</button>
+          {{if .Query}}
+          <a class="reset" href="/">Réinitialiser</a>
+          {{end}}
+        </form>
+      </div>
+    </header>
+    <main class="container">
+      <section class="stats">
+        <p>
+          {{.Count}} artiste{{if ne .Count 1}}s{{end}} affiché{{if ne .Count 1}}s{{end}}
+          sur {{.Total}} disponibles.
+        </p>
+        <form method="post" action="/refresh">
+          <button type="submit">Actualiser depuis l'API</button>
+        </form>
+      </section>
+      {{if .Artists}}
+      <section class="grid">
+        {{range .Artists}}
+        <article class="card">
+          <a href="/artist?id={{.ID}}">
+            <div class="thumb">
+              <img src="{{.Image}}" alt="Photo de {{.Name}}">
+            </div>
+            <div class="card-body">
+              <h2>{{.Name}}</h2>
+              <p>Création&nbsp;: {{.CreationDate}}</p>
+              <p>Premier album&nbsp;: {{formatDate .FirstAlbum}}</p>
+              <p>Membres&nbsp;: {{joinMembers .Members}}</p>
+            </div>
+          </a>
+        </article>
+        {{end}}
+      </section>
+      {{else}}
+      <p class="empty">Aucun résultat pour «&nbsp;{{.Query}}&nbsp;».</p>
+      {{end}}
+    </main>
+    <footer class="footer">
+      <p>Propulsé par l'API <a href="https://groupietrackers.herokuapp.com/api">Groupie Tracker</a>.</p>
+    </footer>
+  </body>
+</html>
+
