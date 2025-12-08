@@ -10,9 +10,16 @@
     <header class="header">
       <div class="container">
         <div class="brand">
-          <h1>Groupie Tracker</h1>
+          <h1>
+            <img src="/static/logo_V1_Ge-removebg-preview.png" alt="Groupie Tracker" class="logo">
+          </h1>
           <p>Catalogue interactif des artistes fournis par l'API Groupie Tracker</p>
         </div>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="/" class="nav-link">Artistes</a>
+          <a href="#" class="nav-link">Concerts</a>
+          <a href="#" class="nav-link">Contact</a>
+        </nav>
         <form class="search-form" method="get" action="/">
           <label>
             <span class="sr-only">Recherche</span>
@@ -26,6 +33,16 @@
       </div>
     </header>
     <main class="container">
+      <section class="hero">
+        <div class="container">
+          <div class="hero-banner">
+            <div class="hero-content">
+              <h1 class="brand">Découvrez les <span class="gold-text-gradient">légendes</span> de la musique</h1>
+              <p>Catalogue interactif des artistes fournis par l'API Groupie Tracker</p>
+            </div>
+          </div>
+        </div>
+      </section>
       <section class="stats">
         <p>
           {{.Count}} artiste{{if ne .Count 1}}s{{end}} affiché{{if ne .Count 1}}s{{end}}
