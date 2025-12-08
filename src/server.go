@@ -6,7 +6,25 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/gorilla/sessions"
 )
+
+var (
+	store *sessions.CookieStore
+)
+
+func init() {
+	// Initialise le store de sessions avec une clé secrète
+	store = sessions.NewCookieStore([]byte(SessionSecret))
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   SessionMaxAge,
+		HttpOnly: true,
+		Secure:   true, // Requiert HTTPS
+		SameSite: http.SameSiteLaxMode,
+	}
+}
 
 type Server struct {
 	client    *http.Client
@@ -38,9 +56,12 @@ func NewServer() (*Server, error) {
 
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.HandleIndex)
-	mux.HandleFunc("/artist", s.HandleArtist)
-	mux.HandleFunc(RefreshPath, s.HandleRefresh)
+
+	// Handlers avec support de sessions (accessible via GetSession() dans les handlers)
+	mux.HandleFunc("/", SessionMiddleware(s.HandleIndex))
+	mux.HandleFunc("/artist", SessionMiddleware(s.HandleArtist))
+	mux.HandleFunc(RefreshPath, SessionMiddleware(s.HandleRefresh))
+	
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.Handle(StaticPrefix, http.StripPrefix(StaticPrefix, fileServer))
 
@@ -49,8 +70,11 @@ func (s *Server) Start() error {
 		Handler:           mux,
 		ReadHeaderTimeout: ReadHeaderTimeout,
 	}
-	log.Printf("Serveur démarré sur http://localhost%s", ServerAddress)
-	return server.ListenAndServe()
+
+	log.Printf("Serveur HTTPS démarré sur https://localhost%s", ServerAddress)
+	log.Printf("Certificats utilisés: %s (cert) et %s (key)", CertFile, KeyFile)
+	log.Printf("Sessions Gorilla activées (nom: %s)", SessionName)
+	return server.ListenAndServeTLS(CertFile, KeyFile)
 }
 
 func (s *Server) RefreshData() error {

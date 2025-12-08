@@ -34,19 +34,17 @@
     </header>
     <main class="container">
       <section class="hero">
-        <div class="container">
-          <div class="hero-banner">
-            <div class="hero-content">
-              <h1 class="brand">Découvrez les <span class="gold-text-gradient">légendes</span> de la musique</h1>
-              <p>Catalogue interactif des artistes fournis par l'API Groupie Tracker</p>
-            </div>
+        <div class="hero-banner">
+          <div class="hero-content">
+            <h1 class="brand">Découvrez les <span class="gold-text-gradient">légendes</span> de la musique</h1>
+            <p>Explorez un catalogue interactif et complet des artistes les plus influents, alimenté par l'API Groupie Tracker</p>
           </div>
         </div>
       </section>
       <section class="stats">
         <p>
-          {{.Count}} artiste{{if ne .Count 1}}s{{end}} affiché{{if ne .Count 1}}s{{end}}
-          sur {{.Total}} disponibles.
+          <strong>{{.Count}}</strong> artiste{{if ne .Count 1}}s{{end}} affiché{{if ne .Count 1}}s{{end}}
+          sur <strong>{{.Total}}</strong> disponibles
         </p>
         <form method="post" action="/refresh">
           <button type="submit">Actualiser depuis l'API</button>

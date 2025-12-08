@@ -23,17 +23,19 @@
     </header>
     <main class="container detail">
       <section class="hero">
-        <img src="{{.Artist.Image}}" alt="Photo de {{.Artist.Name}}">
+        <div>
+          <img src="{{.Artist.Image}}" alt="Photo de {{.Artist.Name}}">
+        </div>
         <div class="hero-body">
-          <h2>Localisations référencées</h2>
+          <h2>📍 Localisations référencées</h2>
           <ul>
             {{range .Artist.Locations}}
             <li>{{formatLocation .}}</li>
             {{else}}
-            <li>Aucune information.</li>
+            <li>Aucune information disponible.</li>
             {{end}}
           </ul>
-          <h2>Dates de concerts</h2>
+          <h2>📅 Dates de concerts</h2>
           <ul class="dates">
             {{range .Artist.ConcertDates}}
             <li>{{formatDate .}}</li>
@@ -44,7 +46,7 @@
         </div>
       </section>
       <section>
-        <h2>Relation dates / lieux</h2>
+        <h2>🗺️ Relation dates / lieux</h2>
         {{if .LocationDates}}
         <div class="relations">
           {{range .LocationDates}}
@@ -57,14 +59,14 @@
               {{range .Dates}}
               <li>{{formatDate .}}</li>
               {{else}}
-              <li>Aucune date.</li>
+              <li>Aucune date disponible.</li>
               {{end}}
             </ul>
           </article>
           {{end}}
         </div>
         {{else}}
-        <p class="empty">Pas de lien géographique disponible.</p>
+        <p class="empty">Aucune relation géographique disponible.</p>
         {{end}}
       </section>
     </main>
