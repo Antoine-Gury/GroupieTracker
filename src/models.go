@@ -51,7 +51,8 @@ type LocationDates struct {
 }
 
 type ArtistPageData struct {
-	Artist        Artist
-	LocationDates []LocationDates
+	Artist          Artist
+	LocationDates   []LocationDates
 	LocationsCoords []LocationWithCoords
+	PayPalClientID  string
 }

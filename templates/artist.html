@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <!-- PayPal SDK -->
+    {{if .PayPalClientID}}
+    <script src="https://www.paypal.com/sdk/js?client-id={{.PayPalClientID}}&currency=EUR"></script>
+    {{end}}
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -135,6 +139,42 @@
         {{end}}
       </section>
       <section>
+        <h2>🎫 Acheter des billets</h2>
+        {{if .LocationDates}}
+        <div class="ticket-purchase" style="margin: 2rem 0;">
+          {{range .LocationDates}}
+          <div class="ticket-card" style="background: var(--card); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid var(--border-light);">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 0.5rem 0; color: var(--foreground); font-size: 1.25rem;">{{.Pretty}}</h3>
+                <p style="margin: 0.25rem 0; color: var(--muted); font-size: 0.9rem;">
+                  <strong>{{.Count}}</strong> concert{{if ne .Count 1}}s{{end}} disponible{{if ne .Count 1}}s{{end}}
+                </p>
+                <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem; color: var(--foreground-secondary); font-size: 0.85rem;">
+                  {{range $index, $date := .Dates}}{{if lt $index 3}}
+                  <li>{{formatDate $date}}</li>
+                  {{end}}{{end}}
+                  {{if gt (len .Dates) 3}}
+                  <li style="color: var(--muted);">... et {{sub (len .Dates) 3}} autre{{if gt (sub (len .Dates) 3) 1}}s{{end}}</li>
+                  {{end}}
+                </ul>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-end;">
+                <div style="text-align: right;">
+                  <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">Prix unitaire</p>
+                  <p style="margin: 0; color: var(--gold); font-size: 1.5rem; font-weight: 700;">{{printf "%.2f" 50.00}}€</p>
+                </div>
+                <div id="paypal-button-container-{{.Raw}}" data-artist-id="{{$.Artist.ID}}" data-location="{{.Raw}}" data-price="50.00"></div>
+              </div>
+            </div>
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <p class="empty">Aucun concert disponible pour l'achat de billets.</p>
+        {{end}}
+      </section>
+      <section>
         <h2>📋 Relation dates / lieux</h2>
         {{if .LocationDates}}
         <div class="relations">
@@ -162,6 +202,103 @@
     <footer class="footer">
       <p>Propulsé par l'API <a href="https://groupietrackers.herokuapp.com/api">Groupie Tracker</a>.</p>
     </footer>
+    <script>
+      // Configuration PayPal
+      const PAYPAL_CLIENT_ID = '{{.PayPalClientID}}';
+      
+      // Fonction pour créer un bouton PayPal pour chaque emplacement
+      function initPayPalButtons() {
+        const buttons = document.querySelectorAll('[id^="paypal-button-container-"]');
+        
+        buttons.forEach(container => {
+          const artistId = container.getAttribute('data-artist-id');
+          const location = container.getAttribute('data-location');
+          const price = parseFloat(container.getAttribute('data-price'));
+          
+          if (typeof paypal !== 'undefined' && paypal.Buttons) {
+            paypal.Buttons({
+              createOrder: function(data, actions) {
+                return fetch('/api/paypal/create-order', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    artist_id: parseInt(artistId),
+                    location: location,
+                    quantity: 1,
+                    amount: price
+                  })
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.approve_url) {
+                    window.location.href = data.approve_url;
+                    return data.order_id;
+                  }
+                  return data.order_id;
+                })
+                .catch(error => {
+                  console.error('Erreur création commande:', error);
+                  alert('Erreur lors de la création de la commande');
+                });
+              },
+              style: {
+                color: 'gold',
+                shape: 'rect',
+                label: 'pay',
+                height: 40
+              }
+            }).render('#' + container.id);
+          } else {
+            // Fallback: bouton simple si PayPal SDK n'est pas chargé
+            container.innerHTML = `
+              <button onclick="buyTicket(${artistId}, '${location}', ${price})" 
+                      style="padding: 0.75rem 1.5rem; background: var(--gradient-gold); 
+                             color: var(--bg); border: none; border-radius: 0.75rem; 
+                             font-weight: 600; cursor: pointer;">
+                Acheter pour ${price}€
+              </button>
+            `;
+          }
+        });
+      }
+      
+      // Fonction fallback pour l'achat
+      function buyTicket(artistId, location, price) {
+        fetch('/api/paypal/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            artist_id: artistId,
+            location: location,
+            quantity: 1,
+            amount: price
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.approve_url) {
+            window.location.href = data.approve_url;
+          } else {
+            alert('Erreur lors de la création de la commande');
+          }
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+          alert('Erreur lors de la création de la commande');
+        });
+      }
+      
+      // Initialiser les boutons PayPal quand le DOM est prêt
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPayPalButtons);
+      } else {
+        initPayPalButtons();
+      }
+    </script>
   </body>
 </html>
 

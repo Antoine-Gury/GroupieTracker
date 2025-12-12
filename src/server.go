@@ -40,6 +40,9 @@ func NewServer() (*Server, error) {
 		"joinMembers": func(members []string) string {
 			return strings.Join(members, ", ")
 		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
 	}
 	tmpl := template.Must(template.New("pages").Funcs(funcMap).ParseGlob(TemplatesDirectory))
 	srv := &Server{
@@ -62,6 +65,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/artist", SessionMiddleware(s.HandleArtist))
 	mux.HandleFunc(RefreshPath, SessionMiddleware(s.HandleRefresh))
 	mux.HandleFunc("/api/geocode", SessionMiddleware(s.HandleGeocode))
+	
+	// Handlers PayPal
+	mux.HandleFunc("/api/paypal/create-order", SessionMiddleware(s.HandleCreateOrder))
+	mux.HandleFunc("/api/paypal/capture-order", SessionMiddleware(s.HandleCaptureOrder))
+	mux.HandleFunc("/paypal/success", SessionMiddleware(s.HandlePayPalSuccess))
 	
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.Handle(StaticPrefix, http.StripPrefix(StaticPrefix, fileServer))

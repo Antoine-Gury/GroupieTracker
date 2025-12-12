@@ -6,6 +6,10 @@ server.key
 *.crt
 *.cert
 
+# Fichiers d'environnement
+.env
+.env.local
+
 # Binaries
 *.exe
 *.exe~
