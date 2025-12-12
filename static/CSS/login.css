@@ -1,0 +1,195 @@
+/* Login Page Styles */
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+.vinyl-decoration {
+  position: absolute;
+  top: 50%;
+  right: -150px;
+  width: 700px;
+  height: 700px;
+  margin-top: -350px;
+  background: 
+    radial-gradient(circle at center, rgba(10,14,26,0.9) 38%, transparent 39%),
+    radial-gradient(circle at center, transparent 40%, rgba(251,191,36,0.08) 41%, rgba(251,191,36,0.08) 42%, transparent 43%),
+    repeating-conic-gradient(
+      from 0deg,
+      transparent 0deg 2deg,
+      rgba(251,191,36,0.06) 2deg 4deg
+    ),
+    radial-gradient(
+      circle,
+      rgba(251,191,36,0.1) 0%,
+      rgba(251,191,36,0.06) 25%,
+      rgba(251,191,36,0.03) 45%,
+      rgba(251,191,36,0.01) 65%,
+      transparent 85%
+    );
+  border-radius: 50%;
+  animation: rotateVinyl 25s linear infinite;
+  pointer-events: none;
+  opacity: 0.5;
+  box-shadow: 0 0 60px rgba(251,191,36,0.15);
+}
+
+.login-box {
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  border-radius: 1.5rem;
+  padding: 3rem 2.5rem;
+  max-width: 420px;
+  width: 90vw;
+  box-shadow: var(--shadow-lg), var(--shadow-gold);
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.login-header h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+
+.login-header p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  padding: 0.875rem 1.125rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-light);
+  background: rgba(255,255,255,0.05);
+  color: var(--foreground);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.form-group input::placeholder {
+  color: var(--muted-light);
+}
+
+.form-group input:focus {
+  border-color: var(--gold);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(251,191,36,0.1);
+}
+
+.login-button {
+  padding: 0.875rem 1.5rem;
+  background: var(--gradient-gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  margin-top: 0.5rem;
+}
+
+.login-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-md), var(--shadow-gold);
+  filter: brightness(1.1);
+}
+
+.login-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.login-footer {
+  text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+}
+
+.login-footer p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.login-footer a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.login-footer a:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .login-box {
+    padding: 2rem 1.5rem;
+    border-radius: 1.25rem;
+  }
+
+  .login-header h1 {
+    font-size: 2rem;
+  }
+
+  .login-header p {
+    font-size: 0.875rem;
+  }
+
+  .form-group input {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .login-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
