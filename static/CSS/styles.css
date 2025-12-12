@@ -1041,3 +1041,42 @@ a {
   }
 }
 
+/* Styles pour la carte Leaflet */
+#map-container {
+  background: var(--card);
+}
+
+#map {
+  z-index: 0;
+}
+
+/* Ajuster les popups de la carte pour correspondre au thème */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-secondary) !important;
+  color: var(--foreground) !important;
+  border-radius: 0.75rem !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-secondary) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+/* Marker cluster personnalisé */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(251,191,36,0.6) !important;
+  border: 2px solid var(--gold) !important;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: var(--gold) !important;
+  color: var(--bg) !important;
+  font-weight: 700 !important;
+}

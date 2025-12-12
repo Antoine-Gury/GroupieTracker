@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{.Artist.Name}} · Groupie Tracker</title>
     <link rel="stylesheet" href="/static/CSS/styles.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   </head>
   <body>
     <header class="header">
@@ -46,7 +53,89 @@
         </div>
       </section>
       <section>
-        <h2>🗺️ Relation dates / lieux</h2>
+        <h2>🗺️ Carte des concerts</h2>
+        {{if .LocationsCoords}}
+        <div id="map-container" style="width: 100%; height: 500px; margin: 2rem 0; border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow-md); border: 1px solid var(--border-light);">
+          <div id="map" style="width: 100%; height: 100%;"></div>
+        </div>
+        <script>
+          // Attendre que le DOM soit chargé et que Leaflet soit disponible
+          document.addEventListener('DOMContentLoaded', function() {
+            // Données des emplacements avec coordonnées
+            const locationsData = [
+              {{range .LocationsCoords}}
+              {
+                location: {{printf "%q" .Location}},
+                lat: {{printf "%.6f" .Coordinates.Latitude}},
+                lon: {{printf "%.6f" .Coordinates.Longitude}},
+                dates: [
+                  {{range $index, $date := .Dates}}{{if $index}}, {{end}}{{printf "%q" (formatDate $date)}}{{end}}
+                ]
+              },
+              {{end}}
+            ];
+            
+            // Filtrer les emplacements avec des coordonnées valides
+            const validLocations = locationsData.filter(loc => loc.lat !== 0 || loc.lon !== 0);
+            
+            if (validLocations.length > 0 && typeof L !== 'undefined') {
+              // Initialiser la carte Leaflet
+              const map = L.map('map').setView([validLocations[0].lat, validLocations[0].lon], 3);
+              
+              // Ajouter la couche de tuiles OpenStreetMap
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+              }).addTo(map);
+              
+              // Grouper les marqueurs pour les emplacements proches
+              const markers = L.markerClusterGroup();
+              
+              // Ajouter un marqueur pour chaque emplacement
+              validLocations.forEach(function(loc) {
+                const popupContent = `
+                  <div style="padding: 0.5rem;">
+                    <h3 style="margin: 0 0 0.5rem 0; color: var(--foreground); font-size: 1.1rem;">${loc.location}</h3>
+                    <p style="margin: 0.25rem 0; color: var(--muted); font-size: 0.9rem;">
+                      <strong>${loc.dates.length}</strong> concert${loc.dates.length > 1 ? 's' : ''}
+                    </p>
+                    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem; color: var(--foreground); font-size: 0.85rem;">
+                      ${loc.dates.map(date => `<li>${date}</li>`).join('')}
+                    </ul>
+                  </div>
+                `;
+                
+                const marker = L.marker([loc.lat, loc.lon]);
+                marker.bindPopup(popupContent);
+                markers.addLayer(marker);
+              });
+              
+              map.addLayer(markers);
+              
+              // Ajuster la vue pour inclure tous les marqueurs
+              if (validLocations.length > 1) {
+                const bounds = markers.getBounds();
+                if (bounds.isValid()) {
+                  map.fitBounds(bounds, { padding: [50, 50] });
+                }
+              }
+            } else if (validLocations.length === 0) {
+              // Afficher un message si aucun emplacement valide
+              document.getElementById('map-container').innerHTML = 
+                '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted);">Aucune coordonnée géographique disponible.</div>';
+            } else {
+              // Erreur de chargement de Leaflet
+              document.getElementById('map-container').innerHTML = 
+                '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted);">Erreur de chargement de la carte.</div>';
+            }
+          });
+        </script>
+        {{else}}
+        <p class="empty">Aucune localisation disponible pour la carte.</p>
+        {{end}}
+      </section>
+      <section>
+        <h2>📋 Relation dates / lieux</h2>
         {{if .LocationDates}}
         <div class="relations">
           {{range .LocationDates}}

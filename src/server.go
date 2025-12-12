@@ -61,6 +61,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/", SessionMiddleware(s.HandleIndex))
 	mux.HandleFunc("/artist", SessionMiddleware(s.HandleArtist))
 	mux.HandleFunc(RefreshPath, SessionMiddleware(s.HandleRefresh))
+	mux.HandleFunc("/api/geocode", SessionMiddleware(s.HandleGeocode))
 	
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.Handle(StaticPrefix, http.StripPrefix(StaticPrefix, fileServer))

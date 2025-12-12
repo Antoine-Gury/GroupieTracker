@@ -1,6 +1,7 @@
 package src
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -60,9 +61,14 @@ func (s *Server) HandleArtist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	locDates := BuildLocationDates(art.DatesLocations)
+	
+	// Géocoder les emplacements pour la carte
+	locationsCoords := GeocodeLocations(art.Locations, art.DatesLocations)
+	
 	data := ArtistPageData{
-		Artist:        art,
-		LocationDates: locDates,
+		Artist:          art,
+		LocationDates:   locDates,
+		LocationsCoords: locationsCoords,
 	}
 	s.Render(w, "artist.html", data)
 }
@@ -77,4 +83,28 @@ func (s *Server) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) HandleGeocode(w http.ResponseWriter, r *http.Request) {
+	// API endpoint pour géocoder une adresse (optionnel, pour utilisation AJAX)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	address := r.URL.Query().Get("address")
+	if address == "" {
+		http.Error(w, "Paramètre 'address' manquant", http.StatusBadRequest)
+		return
+	}
+	
+	coords, err := GeocodeLocation(address)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(coords)
 }
