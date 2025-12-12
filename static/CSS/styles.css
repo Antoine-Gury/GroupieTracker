@@ -483,6 +483,24 @@ form[action="/refresh"] button:hover {
   background: rgba(251,191,36,0.1);
 }
 
+.nav-link.nav-login {
+  background: var(--gradient-gold);
+  color: var(--bg);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin-left: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.nav-link.nav-login:hover {
+  background: var(--gradient-gold);
+  color: var(--bg);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-md), var(--shadow-gold);
+  filter: brightness(1.1);
+}
+
 .footer {
   margin-top: auto;
   text-align: center;
