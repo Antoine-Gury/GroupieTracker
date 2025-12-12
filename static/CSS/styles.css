@@ -141,7 +141,7 @@ img {
   z-index: 100;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: rgba(10, 14, 26, 0.75);
+  background: rgba(10, 14, 26, 1);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
@@ -165,7 +165,9 @@ img {
   justify-content: space-between;
   gap: 2rem;
   padding: 1.25rem 1.5rem;
+  padding-bottom: 0.001rem;
   flex-wrap: wrap;
+  margin-top: -40px;
 }
 
 .brand h1 {
@@ -200,13 +202,6 @@ img {
   transform: scale(1.05);
   animation: none;
   filter: drop-shadow(0 0 12px rgba(251,191,36,0.35));
-}
-
-.brand p {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 400;
 }
 
 .search-form {
@@ -521,29 +516,51 @@ form[action="/refresh"] button:hover {
   border: 0;
 }
 
-.detail-header {
+.detail-headerArtist {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 14, 26, 1);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  animation: slideDown 0.5s ease-out;
   display: flex;
   justify-content: space-between;
   gap: 2rem;
   align-items: flex-start;
-  padding: 2rem 0;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  flex-wrap: wrap;
+
 }
 
-.detail-header h1 {
+.headerArtist .container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+
+.detail-headerArtist h1 {
   margin-bottom: 0.5rem;
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1.2;
 }
 
-.detail-header .meta {
+.detail-headerArtist .meta {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   text-align: right;
 }
 
-.detail-header .meta p {
+.detail-headerArtist .meta p {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
@@ -945,7 +962,7 @@ a {
   }
 
   .brand .logo {
-    height: 140px !important;
+    height: 100px ;
     margin: 0 auto;
   }
 
@@ -1015,7 +1032,7 @@ a {
 
 @media (min-width: 1024px) {
   .brand .logo {
-    height: 220px !important;
+    height: 140px !important;
   }
 
   .search-form input {
