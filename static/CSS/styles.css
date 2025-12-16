@@ -548,19 +548,21 @@ form[action="/refresh"] button:hover {
   display: flex;
   justify-content: space-between;
   gap: 2rem;
-  align-items: flex-start;
   align-items: center;
-  padding: 1.25rem 1.5rem;
+  padding: 2rem 1.5rem;
   flex-wrap: wrap;
-
 }
 
 .headerArtist .container {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding: 2rem 0 2rem calc((100vw - min(1400px, 92vw)) / 2 + 1.5rem);
+}
+
+.headerArtist .container.detail-headerArtist {
+  padding-left: calc((100vw - min(1400px, 92vw)) / 2 + 1.5rem);
+  padding-right: calc((100vw - min(1400px, 92vw)) / 2 + 1.5rem);
 }
 
 
