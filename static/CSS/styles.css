@@ -145,7 +145,11 @@ img {
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
-  animation: slideDown 0.5s ease-out;
+}
+
+/* Make the banner span all grid columns in the hero section */
+.hero .hero-banner {
+  grid-column: 1 / -1;
 }
 
 @keyframes slideDown {
@@ -161,22 +165,42 @@ img {
 
 .header .container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  flex-direction: column;
+  gap: 0;
   padding: 1.25rem 1.5rem;
-  padding-bottom: 0.001rem;
-  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
   margin-top: -40px;
 }
 
-.brand h1 {
-  margin: 0;
-  font-size: 2rem;
-  line-height: 1;
-  padding: 0;
-  font-weight: 700;
+.header > .container > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  width: 100%;
 }
+
+.header .brand {
+  flex-shrink: 0;
+}
+
+.header .nav {
+  display: flex !important;
+  gap: 1rem;
+  align-items: center;
+}
+
+.header .search-form {
+  width: auto;
+  max-width: 420px;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-top: -10px; /* keep close but leave breathing room */
+}
+
 
 .brand .logo {
   display: block;
@@ -208,13 +232,13 @@ img {
   display: flex;
   gap: 0.75rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .search-form label {
   position: relative;
-  flex: 1;
-  min-width: 200px;
+  flex: 0 1 auto;
+  min-width: 300px;
 }
 
 .search-form input {
@@ -716,13 +740,16 @@ form[action="/refresh"] button:hover {
 .hero-banner {
   display: flex;
   justify-content: center;
-  padding: 2.5rem 2rem;
+  padding: 3rem 1.5rem;
   border-radius: 1.25rem;
   background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(251,191,36,0.05));
   border: 1px solid rgba(251,191,36,0.25);
   box-shadow: var(--shadow-md), var(--shadow-gold), 0 0 25px rgba(251,191,36,0.15);
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 .hero-banner::before {
@@ -789,7 +816,7 @@ form[action="/refresh"] button:hover {
 
 .hero-content {
   text-align: center;
-  max-width: 900px;
+  max-width: 1200px;
   padding: 1rem;
   position: relative;
   z-index: 1;

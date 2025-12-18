@@ -9,17 +9,19 @@
   <body>
     <header class="header">
       <div class="container">
-        <div class="brand">
-          <h1>
-            <img src="/static/pictures/logo_V3-re.png" alt="Groupie Tracker" class="logo">
-          </h1>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 2rem;">
+          <div class="brand">
+            <h1>
+              <img src="/static/pictures/logo_V3-re.png" alt="Groupie Tracker" class="logo">
+            </h1>
+          </div>
+          <nav class="nav" aria-label="Main navigation">
+            <a href="/login" class="nav-link nav-login">Se connecter</a>
+            <a href="#" class="nav-link">Contact</a>
+            <a href="#" class="nav-link">Concerts</a>
+            <a href="/" class="nav-link">Artistes</a>
+          </nav>
         </div>
-        <nav class="nav" aria-label="Main navigation">
-          <a href="/" class="nav-link">Artistes</a>
-          <a href="#" class="nav-link">Concerts</a>
-          <a href="#" class="nav-link">Contact</a>
-          <a href="/login" class="nav-link nav-login">Se connecter</a>
-        </nav>
         <form class="search-form" method="get" action="/">
           <label>
             <span class="sr-only">Recherche</span>
