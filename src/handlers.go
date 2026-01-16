@@ -268,3 +268,7 @@ func (s *Server) HandlePayPalSuccess(w http.ResponseWriter, r *http.Request) {
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	s.Render(w, "login.html", nil)
 }
+
+func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	s.Render(w, "register.html", nil)
+}

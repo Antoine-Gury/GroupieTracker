@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connexion · Groupie Tracker</title>
+    <title>Inscription · Groupie Tracker</title>
     <link rel="stylesheet" href="/static/CSS/styles.css">
     <link rel="stylesheet" href="/static/CSS/login.css">
   </head>
@@ -12,10 +12,10 @@
       <div class="login-box">
         <div class="login-header">
           <h1 class="gold-text-gradient">Groupie Tracker</h1>
-          <p>Découvrez les concerts de vos artistes préférés</p>
+          <p>Créez votre compte pour découvrir les concerts</p>
         </div>
 
-        <form class="login-form" method="POST" action="/login">
+        <form class="login-form" method="POST" action="/register">
           <div class="form-group">
             <label for="email">Email</label>
             <input 
@@ -27,22 +27,36 @@
             >
           </div>
 
+
           <div class="form-group">
             <label for="password">Mot de passe</label>
             <input 
               type="password" 
               id="password" 
               name="password" 
-              placeholder="Entrez votre mot de passe"
+              placeholder="Créez un mot de passe"
               required
+              minlength="8"
             >
           </div>
 
-          <button type="submit" class="login-button">Se connecter</button>
+          <div class="form-group">
+            <label for="confirm-password">Confirmer le mot de passe</label>
+            <input 
+              type="password" 
+              id="confirm-password" 
+              name="confirm_password" 
+              placeholder="Confirmez votre mot de passe"
+              required
+              minlength="8"
+            >
+          </div>
+
+          <button type="submit" class="login-button">S'inscrire</button>
         </form>
 
         <div class="login-footer">
-          <p>Pas encore de compte ? <a href="/register">S'inscrire</a></p>
+          <p>Vous avez déjà un compte ? <a href="/login">Se connecter</a></p>
         </div>
       </div>
 

@@ -63,6 +63,7 @@ func (s *Server) Start() error {
 	// Handlers avec support de sessions (accessible via GetSession() dans les handlers)
 	mux.HandleFunc("/", SessionMiddleware(s.HandleIndex))
 	mux.HandleFunc("/login", s.HandleLogin)
+	mux.HandleFunc("/register", s.HandleRegister)
 	mux.HandleFunc("/artist", SessionMiddleware(s.HandleArtist))
 	mux.HandleFunc(RefreshPath, SessionMiddleware(s.HandleRefresh))
 	mux.HandleFunc("/api/geocode", SessionMiddleware(s.HandleGeocode))
