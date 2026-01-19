@@ -9,7 +9,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// DB is the global connection pool used by the application.
 var DB *sql.DB
 
 // ConnectDB opens (or returns) a MySQL connection to the groupietracker database.
