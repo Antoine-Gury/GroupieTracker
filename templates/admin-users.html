@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion utilisateurs · Groupie Tracker</title>
+    <link rel="stylesheet" href="/static/CSS/styles.css">
+    <style>
+      .user-menu button:hover { opacity: 0.8; }
+      #profileDropdown a:hover, #profileDropdown button:hover { background: var(--card-bg); }
+      .users-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+      .users-table th, .users-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+      .users-table th { background: var(--card-bg); font-weight: 600; color: var(--gold); }
+      .users-table tr:hover { background: var(--card-bg); }
+      .role-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; font-weight: 600; }
+      .role-admin { background: var(--gold); color: var(--bg); }
+      .role-user { background: var(--muted); color: var(--foreground); }
+      .action-buttons { display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap; }
+      .action-buttons form { display: inline-block; margin: 0; }
+      .btn-small { padding: 0.5rem 1rem; font-size: 0.875rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; }
+      .btn-danger { background: #dc3545; color: white; }
+      .btn-danger:hover { background: #c82333; }
+      .btn-primary { background: var(--gold); color: var(--bg); }
+      .btn-primary:hover { opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 2rem;">
+          <div class="brand">
+            <h1>
+              <img src="/static/pictures/logo_V3-re.png" alt="Groupie Tracker" class="logo">
+            </h1>
+          </div>
+          <nav class="nav" aria-label="Main navigation">
+            {{if .User}}
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <a href="/home" class="nav-link">Artistes</a>
+              <a href="/profile" class="nav-link">Mon compte</a>
+              <a href="/admin/users" class="nav-link" style="color: var(--gold); font-weight: 600;">Administration</a>
+              <div class="user-menu" style="position: relative;">
+                <button id="profileBtn" class="nav-link" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                  {{if .User.PhotoProfil}}
+                  <img src="{{.User.PhotoProfil}}" alt="Photo de profil" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                  {{else}}
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: bold;">
+                    {{substr .User.Username 0 1 | upper}}
+                  </div>
+                  {{end}}
+                  <span>{{if .User.Pseudo}}{{.User.Pseudo}}{{else}}{{.User.Username}}{{end}}</span>
+                </button>
+                <div id="profileDropdown" style="display: none; position: absolute; top: 100%; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem; margin-top: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 200px; z-index: 1000;">
+                  <a href="/profile" style="display: block; padding: 0.5rem; color: var(--foreground); text-decoration: none; border-radius: 0.25rem;">Gérer mon compte</a>
+                  <form method="POST" action="/logout" style="margin: 0;">
+                    <button type="submit" style="width: 100%; text-align: left; padding: 0.5rem; background: none; border: none; color: var(--foreground); cursor: pointer; border-radius: 0.25rem;">Déconnexion</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {{else}}
+            <a href="/login" class="nav-link nav-login">Se connecter</a>
+            {{end}}
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top: 2rem;">
+      <section style="background: var(--card-bg); border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border);">
+        <h2 style="margin-bottom: 1.5rem; color: var(--gold);">Gestion des utilisateurs</h2>
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">Gérez les utilisateurs du site : modifiez les rôles ou supprimez des comptes.</p>
+        
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Photo</th>
+              <th>Pseudo / Username</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Inscription</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Users}}
+            <tr>
+              <td>{{.ID}}</td>
+              <td>
+                {{if .PhotoProfil}}
+                <img src="{{.PhotoProfil}}" alt="Photo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                {{else}}
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: bold;">
+                  {{substr .Username 0 1 | upper}}
+                </div>
+                {{end}}
+              </td>
+              <td>
+                {{if .Pseudo}}
+                  {{.Pseudo}}
+                {{else}}
+                  {{.Username}}
+                {{end}}
+              </td>
+              <td>{{.Email}}</td>
+              <td>
+                {{if eq .Role "admin"}}
+                <span class="role-badge role-admin">Admin</span>
+                {{else}}
+                <span class="role-badge role-user">User</span>
+                {{end}}
+              </td>
+              <td style="font-size: 0.875rem; color: var(--muted);">{{.CreatedAt}}</td>
+              <td style="vertical-align: middle;">
+                <div class="action-buttons">
+                  <form method="POST" action="/admin/users/update-role" style="margin: 0;">
+                    <input type="hidden" name="user_id" value="{{.ID}}">
+                    <input type="hidden" name="role" value="{{if eq .Role "admin"}}user{{else}}admin{{end}}">
+                    <button type="submit" class="btn-small btn-primary" onclick="return confirm('Êtes-vous sûr de vouloir changer le rôle de cet utilisateur ?');">
+                      {{if eq .Role "admin"}}Rétrograder{{else}}Promouvoir Admin{{end}}
+                    </button>
+                  </form>
+                  <form method="POST" action="/admin/users/delete" style="margin: 0;">
+                    <input type="hidden" name="user_id" value="{{.ID}}">
+                    <button type="submit" class="btn-small btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.');">
+                      Supprimer
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    {{if .User}}
+    <script>
+      document.getElementById('profileBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dropdown = document.getElementById('profileDropdown');
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+      });
+      document.addEventListener('click', function() {
+        document.getElementById('profileDropdown').style.display = 'none';
+      });
+    </script>
+    {{end}}
+  </body>
+</html>
+

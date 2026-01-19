@@ -1,40 +1,38 @@
 package src
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
 func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
-	// Exemple d'utilisation des sessions Gorilla
-	session, err := GetSession(r)
-	if err != nil {
-		log.Printf("Erreur session: %v", err)
-	}
-
-	// Compter les visites de l'utilisateur
-	var visits int
-	if v, ok := session.Values["visits"].(int); ok {
-		visits = v + 1
-	} else {
-		visits = 1
-	}
-	session.Values["visits"] = visits
-	session.Values["last_visit"] = time.Now().Format(time.RFC3339)
-
-	// Sauvegarder la session
-	if err := SaveSession(w, r, session); err != nil {
-		log.Printf("Erreur sauvegarde session: %v", err)
-	}
-
-	// Log pour debug (optionnel)
-	if visits%10 == 0 {
-		log.Printf("Utilisateur a visité %d fois", visits)
+	// Récupérer les informations de l'utilisateur connecté
+	var userProfile *UserProfile
+	if IsAuthenticated(r) {
+		session, _ := GetSession(r)
+		if userID, ok := session.Values["user_id"].(int); ok {
+			user, err := GetUserByID(DB, userID)
+			if err == nil {
+				userProfile = &UserProfile{
+					ID:          user.ID,
+					Username:    user.Username,
+					Email:       user.Email,
+					Pseudo:      getStringValue(user.Pseudo),
+					Bio:         getStringValue(user.Bio),
+					PhotoProfil: getStringValue(user.PhotoProfil),
+					Role:        user.Role,
+				}
+			}
+		}
 	}
 
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -45,8 +43,64 @@ func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
 		Count:   len(filtered),
 		Total:   len(artists),
 		Artists: filtered,
+		User:    userProfile,
 	}
 	s.Render(w, "index.html", data)
+}
+
+func (s *Server) HandleProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := GetSession(r)
+	if err != nil {
+		http.Error(w, "Session indisponible", http.StatusUnauthorized)
+		return
+	}
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	user, err := GetUserByID(DB, userID)
+	if err != nil {
+		http.Error(w, "Utilisateur introuvable", http.StatusNotFound)
+		return
+	}
+
+	data := IndexPageData{
+		User: &UserProfile{
+			ID:          user.ID,
+			Username:    user.Username,
+			Email:       user.Email,
+			Pseudo:      getStringValue(user.Pseudo),
+			Bio:         getStringValue(user.Bio),
+			PhotoProfil: getStringValue(user.PhotoProfil),
+			Role:        user.Role,
+		},
+	}
+
+	s.Render(w, "profile.html", data)
+}
+
+// getStringValue extrait la valeur d'un sql.NullString
+func getStringValue(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
+// HandleRoot redirige vers la page de login pour forcer l'accès initial par l'auth.
+func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
+	if IsAuthenticated(r) {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func (s *Server) HandleArtist(w http.ResponseWriter, r *http.Request) {
@@ -266,9 +320,329 @@ func (s *Server) HandlePayPalSuccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	s.Render(w, "login.html", nil)
+	// Si déjà connecté, aller directement sur l'accueil
+	if r.Method == http.MethodGet && IsAuthenticated(r) {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+	if r.Method == http.MethodGet {
+		s.Render(w, "login.html", nil)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	email := strings.TrimSpace(r.FormValue("email"))
+	password := r.FormValue("password")
+
+	user, err := GetUserByEmail(DB, email)
+	if err != nil {
+		http.Error(w, "Email ou mot de passe incorrect", http.StatusUnauthorized)
+		return
+	}
+	if err := checkPassword(user.PasswordHash, password); err != nil {
+		http.Error(w, "Email ou mot de passe incorrect", http.StatusUnauthorized)
+		return
+	}
+
+	session, err := GetSession(r)
+	if err != nil {
+		http.Error(w, "Session indisponible", http.StatusInternalServerError)
+		return
+	}
+	session.Values["user_id"] = user.ID
+	session.Values["email"] = user.Email
+	session.Values["username"] = user.Username
+	session.Values["role"] = user.Role
+	if err := SaveSession(w, r, session); err != nil {
+		http.Error(w, "Impossible de sauvegarder la session", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
 func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
-	s.Render(w, "register.html", nil)
+	if r.Method == http.MethodGet {
+		s.Render(w, "register.html", nil)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	email := strings.TrimSpace(r.FormValue("email"))
+	password := r.FormValue("password")
+	confirm := r.FormValue("confirm_password")
+
+	if password != confirm {
+		http.Error(w, "Les mots de passe ne correspondent pas", http.StatusBadRequest)
+		return
+	}
+
+	if err := CreateUser(DB, email, password); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Auto-login après inscription
+	user, err := GetUserByEmail(DB, email)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	session, err := GetSession(r)
+	if err == nil {
+		session.Values["user_id"] = user.ID
+		session.Values["email"] = user.Email
+		session.Values["username"] = user.Username
+		session.Values["role"] = user.Role
+		_ = SaveSession(w, r, session)
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+// HandleLogout déconnecte l'utilisateur
+func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := GetSession(r)
+	if err == nil {
+		session.Values = make(map[interface{}]interface{})
+		session.Options.MaxAge = -1
+		_ = SaveSession(w, r, session)
+	}
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+// HandleUpdateProfile gère la mise à jour du profil utilisateur
+func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := GetSession(r)
+	if err != nil {
+		http.Error(w, "Session indisponible", http.StatusUnauthorized)
+		return
+	}
+
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Error(w, "Non authentifié", http.StatusUnauthorized)
+		return
+	}
+
+	// Créer le dossier uploads s'il n'existe pas
+	uploadDir := "static/uploads"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		log.Printf("Erreur création dossier uploads: %v", err)
+	}
+
+	// Parser le formulaire multipart (pour les fichiers)
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB max
+		http.Error(w, "Erreur parsing formulaire", http.StatusBadRequest)
+		return
+	}
+
+	pseudo := strings.TrimSpace(r.FormValue("pseudo"))
+	bio := strings.TrimSpace(r.FormValue("bio"))
+	photoProfil := ""
+
+	// Gérer l'upload de la photo
+	file, handler, err := r.FormFile("photo_profil")
+	if err == nil && handler != nil {
+		defer file.Close()
+
+		// Générer un nom de fichier unique
+		ext := filepath.Ext(handler.Filename)
+		filename := fmt.Sprintf("profile_%d_%d%s", userID, time.Now().Unix(), ext)
+		filepath := filepath.Join(uploadDir, filename)
+
+		// Créer le fichier
+		dst, err := os.Create(filepath)
+		if err != nil {
+			log.Printf("Erreur création fichier: %v", err)
+		} else {
+			defer dst.Close()
+			if _, err := io.Copy(dst, file); err != nil {
+				log.Printf("Erreur copie fichier: %v", err)
+			} else {
+				photoProfil = "/static/uploads/" + filename
+			}
+		}
+	}
+
+	// Si pas de nouvelle photo mais qu'il y en a déjà une, garder l'ancienne
+	if photoProfil == "" {
+		user, err := GetUserByID(DB, userID)
+		if err == nil && user.PhotoProfil.Valid {
+			photoProfil = user.PhotoProfil.String
+		}
+	}
+
+	// Mettre à jour le profil
+	if err := UpdateUserProfile(DB, userID, pseudo, bio, photoProfil); err != nil {
+		log.Printf("Erreur mise à jour profil: %v", err)
+		http.Error(w, "Erreur lors de la mise à jour du profil", http.StatusInternalServerError)
+		return
+	}
+
+	// Mettre à jour la session si le pseudo a changé
+	if pseudo != "" {
+		session.Values["username"] = pseudo
+		_ = SaveSession(w, r, session)
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+// HandleAdminUsers affiche la page de gestion des utilisateurs (admin seulement)
+func (s *Server) HandleAdminUsers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := GetSession(r)
+	if err != nil {
+		http.Error(w, "Session indisponible", http.StatusUnauthorized)
+		return
+	}
+	adminID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	admin, err := GetUserByID(DB, adminID)
+	if err != nil {
+		http.Error(w, "Utilisateur introuvable", http.StatusNotFound)
+		return
+	}
+
+	users, err := GetAllUsers(DB)
+	if err != nil {
+		log.Printf("Erreur récupération utilisateurs: %v", err)
+		http.Error(w, "Erreur lors de la récupération des utilisateurs", http.StatusInternalServerError)
+		return
+	}
+
+	// Convertir les User en UserDisplay pour faciliter l'affichage dans les templates
+	usersDisplay := make([]UserDisplay, len(users))
+	for i, u := range users {
+		usersDisplay[i] = UserDisplay{
+			ID:          u.ID,
+			Username:    u.Username,
+			Email:       u.Email,
+			Pseudo:      getStringValue(u.Pseudo),
+			Bio:         getStringValue(u.Bio),
+			PhotoProfil: getStringValue(u.PhotoProfil),
+			Role:        u.Role,
+			CreatedAt:   u.CreatedAt.Format("02/01/2006"),
+		}
+	}
+
+	data := AdminUsersPageData{
+		Users: usersDisplay,
+		User: &UserProfile{
+			ID:          admin.ID,
+			Username:    admin.Username,
+			Email:       admin.Email,
+			Pseudo:      getStringValue(admin.Pseudo),
+			Bio:         getStringValue(admin.Bio),
+			PhotoProfil: getStringValue(admin.PhotoProfil),
+			Role:        admin.Role,
+		},
+	}
+
+	s.Render(w, "admin-users.html", data)
+}
+
+// HandleAdminUpdateUserRole met à jour le rôle d'un utilisateur (admin seulement)
+func (s *Server) HandleAdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	userIDStr := r.FormValue("user_id")
+	role := strings.TrimSpace(r.FormValue("role"))
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	if role != "user" && role != "admin" {
+		http.Error(w, "Rôle invalide", http.StatusBadRequest)
+		return
+	}
+
+	// Empêcher un admin de se retirer ses propres droits
+	session, _ := GetSession(r)
+	if currentUserID, ok := session.Values["user_id"].(int); ok && currentUserID == userID && role == "user" {
+		http.Error(w, "Vous ne pouvez pas retirer vos propres droits administrateur", http.StatusForbidden)
+		return
+	}
+
+	if err := UpdateUserRole(DB, userID, role); err != nil {
+		log.Printf("Erreur mise à jour rôle: %v", err)
+		http.Error(w, "Erreur lors de la mise à jour du rôle", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// HandleAdminDeleteUser supprime un utilisateur (admin seulement)
+func (s *Server) HandleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	userIDStr := r.FormValue("user_id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	// Empêcher un admin de se supprimer lui-même
+	session, _ := GetSession(r)
+	if currentUserID, ok := session.Values["user_id"].(int); ok && currentUserID == userID {
+		http.Error(w, "Vous ne pouvez pas supprimer votre propre compte", http.StatusForbidden)
+		return
+	}
+
+	if err := DeleteUser(DB, userID); err != nil {
+		log.Printf("Erreur suppression utilisateur: %v", err)
+		http.Error(w, "Erreur lors de la suppression de l'utilisateur", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }

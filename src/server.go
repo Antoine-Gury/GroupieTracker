@@ -43,6 +43,23 @@ func NewServer() (*Server, error) {
 		"sub": func(a, b int) int {
 			return a - b
 		},
+		"substr": func(s string, start, length int) string {
+			if start >= len(s) {
+				return ""
+			}
+			end := start + length
+			if end > len(s) {
+				end = len(s)
+			}
+			return s[start:end]
+		},
+		"upper": strings.ToUpper,
+		"getString": func(ns interface{}) string {
+			// Helper pour extraire la valeur d'un sql.NullString dans les templates
+			// On ne peut pas directement accéder aux champs Valid/String dans les templates
+			// Cette fonction sera utilisée différemment - on va plutôt créer un type wrapper
+			return ""
+		},
 	}
 	tmpl := template.Must(template.New("pages").Funcs(funcMap).ParseGlob(TemplatesDirectory))
 	srv := &Server{
@@ -61,17 +78,29 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
 	// Handlers avec support de sessions (accessible via GetSession() dans les handlers)
-	mux.HandleFunc("/", SessionMiddleware(s.HandleIndex))
+	// Redirige la racine vers la page de login pour forcer l'auth en premier.
+	mux.HandleFunc("/", s.HandleRoot)
 	mux.HandleFunc("/login", s.HandleLogin)
 	mux.HandleFunc("/register", s.HandleRegister)
-	mux.HandleFunc("/artist", SessionMiddleware(s.HandleArtist))
-	mux.HandleFunc(RefreshPath, SessionMiddleware(s.HandleRefresh))
-	mux.HandleFunc("/api/geocode", SessionMiddleware(s.HandleGeocode))
+	mux.HandleFunc("/home", RequireAuth(s.HandleIndex))
+	mux.HandleFunc("/profile", RequireAuth(s.HandleProfile))
+	mux.HandleFunc("/artist", RequireAuth(s.HandleArtist))
+	mux.HandleFunc(RefreshPath, RequireAuth(s.HandleRefresh))
+	mux.HandleFunc("/api/geocode", RequireAuth(s.HandleGeocode))
 	
 	// Handlers PayPal
-	mux.HandleFunc("/api/paypal/create-order", SessionMiddleware(s.HandleCreateOrder))
-	mux.HandleFunc("/api/paypal/capture-order", SessionMiddleware(s.HandleCaptureOrder))
-	mux.HandleFunc("/paypal/success", SessionMiddleware(s.HandlePayPalSuccess))
+	mux.HandleFunc("/api/paypal/create-order", RequireAuth(s.HandleCreateOrder))
+	mux.HandleFunc("/api/paypal/capture-order", RequireAuth(s.HandleCaptureOrder))
+	mux.HandleFunc("/paypal/success", RequireAuth(s.HandlePayPalSuccess))
+	
+	// Handler gestion de profil
+	mux.HandleFunc("/profile/update", RequireAuth(s.HandleUpdateProfile))
+	mux.HandleFunc("/logout", s.HandleLogout)
+	
+	// Handlers admin (gestion utilisateurs)
+	mux.HandleFunc("/admin/users", RequireAdmin(s.HandleAdminUsers))
+	mux.HandleFunc("/admin/users/update-role", RequireAdmin(s.HandleAdminUpdateUserRole))
+	mux.HandleFunc("/admin/users/delete", RequireAdmin(s.HandleAdminDeleteUser))
 	
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.Handle(StaticPrefix, http.StripPrefix(StaticPrefix, fileServer))

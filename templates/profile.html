@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Groupie Tracker</title>
+    <title>Mon compte · Groupie Tracker</title>
     <link rel="stylesheet" href="/static/CSS/styles.css">
     <style>
       .user-menu button:hover { opacity: 0.8; }
@@ -23,6 +23,7 @@
             {{if .User}}
             <div style="display: flex; align-items: center; gap: 1rem;">
               <a href="/home" class="nav-link">Artistes</a>
+              <a href="/profile" class="nav-link">Mon compte</a>
               {{if eq .User.Role "admin"}}
               <a href="/admin/users" class="nav-link" style="color: var(--gold); font-weight: 600;">Administration</a>
               {{end}}
@@ -47,65 +48,51 @@
             </div>
             {{else}}
             <a href="/login" class="nav-link nav-login">Se connecter</a>
-            <a href="/" class="nav-link">Artistes</a>
             {{end}}
           </nav>
         </div>
-        <form class="search-form" method="get" action="/">
-          <label>
-            <span class="sr-only">Recherche</span>
-            <input type="search" name="q" placeholder="Nom, membre, pays..." value="{{.Query}}">
-          </label>
-          <button type="submit">Rechercher</button>
-          {{if .Query}}
-          <a class="reset" href="/">Réinitialiser</a>
-          {{end}}
-        </form>
       </div>
     </header>
-    <main class="container">
-      <section class="hero">
-        <div class="hero-banner">
-          <div class="hero-content">
-            <h1 class="brand">Découvrez les <span class="gold-text-gradient">légendes</span> de la musique</h1>
-            <p>Explorez un catalogue interactif et complet des artistes les plus influents, alimenté par l'API Groupie Tracker</p>
+
+    <main class="container" style="padding-top: 2rem;">
+      {{if .User}}
+      <section style="background: var(--card-bg); border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border);">
+        <h2 style="margin-bottom: 1.5rem; color: var(--gold);">Gestion de mon compte</h2>
+        <form method="POST" action="/profile/update" enctype="multipart/form-data" style="display: grid; gap: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+            <div style="flex: 0 0 auto;">
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Photo de profil</label>
+              {{if .User.PhotoProfil}}
+              <img src="{{.User.PhotoProfil}}" alt="Photo actuelle" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem; border: 2px solid var(--gold);">
+              {{else}}
+              <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; color: var(--bg); font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">
+                {{substr .User.Username 0 1 | upper}}
+              </div>
+              {{end}}
+              <input type="file" name="photo_profil" accept="image/*" style="font-size: 0.9rem;">
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+              <div style="margin-bottom: 1rem;">
+                <label for="pseudo" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Pseudo</label>
+                <input type="text" id="pseudo" name="pseudo" value="{{if .User.Pseudo}}{{.User.Pseudo}}{{else}}{{.User.Username}}{{end}}" placeholder="Votre pseudo" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--bg); color: var(--foreground); font-size: 1rem;">
+              </div>
+              <div>
+                <label for="bio" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Bio</label>
+                <textarea id="bio" name="bio" rows="4" placeholder="Parlez-nous de vous..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--bg); color: var(--foreground); font-size: 1rem; font-family: inherit; resize: vertical;">{{.User.Bio}}</textarea>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-      <section class="stats">
-        <p>
-          <strong>{{.Count}}</strong> artiste{{if ne .Count 1}}s{{end}} affiché{{if ne .Count 1}}s{{end}}
-          sur <strong>{{.Total}}</strong> disponibles
-        </p>
-        <form method="post" action="/refresh">
-          <button type="submit">Actualiser depuis l'API</button>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" style="padding: 0.75rem 2rem; background: var(--gradient-gold); color: var(--bg); border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 1rem;">Enregistrer les modifications</button>
+            <div style="color: var(--muted); font-size: 0.9rem;">
+              <strong>Email:</strong> {{.User.Email}}
+            </div>
+          </div>
         </form>
       </section>
-      {{if .Artists}}
-      <section class="grid">
-        {{range .Artists}}
-        <article class="card">
-          <a href="/artist?id={{.ID}}">
-            <div class="thumb">
-              <img src="{{.Image}}" alt="Photo de {{.Name}}">
-            </div>
-            <div class="card-body">
-              <h2>{{.Name}}</h2>
-              <p>Création&nbsp;: {{.CreationDate}}</p>
-              <p>Premier album&nbsp;: {{formatDate .FirstAlbum}}</p>
-              <p>Membres&nbsp;: {{joinMembers .Members}}</p>
-            </div>
-          </a>
-        </article>
-        {{end}}
-      </section>
-      {{else}}
-      <p class="empty">Aucun résultat pour «&nbsp;{{.Query}}&nbsp;».</p>
       {{end}}
     </main>
-    <footer class="footer">
-      <p>Propulsé par l'API <a href="https://groupietrackers.herokuapp.com/api">Groupie Tracker</a>.</p>
-    </footer>
+
     {{if .User}}
     <script>
       document.getElementById('profileBtn').addEventListener('click', function(e) {
@@ -120,4 +107,5 @@
     {{end}}
   </body>
 </html>
+
 

@@ -41,6 +41,33 @@ type IndexPageData struct {
 	Count   int
 	Total   int
 	Artists []Artist
+	User    *UserProfile // Informations de l'utilisateur connecté
+}
+
+type UserProfile struct {
+	ID          int
+	Username    string
+	Email       string
+	Pseudo      string
+	Bio         string
+	PhotoProfil string
+	Role        string
+}
+
+type AdminUsersPageData struct {
+	Users []UserDisplay
+	User  *UserProfile // Utilisateur connecté (admin)
+}
+
+type UserDisplay struct {
+	ID          int
+	Username    string
+	Email       string
+	Pseudo      string
+	Bio         string
+	PhotoProfil string
+	Role        string
+	CreatedAt   string
 }
 
 type LocationDates struct {

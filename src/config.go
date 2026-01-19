@@ -17,6 +17,11 @@ const (
 	RefreshPath        = "/refresh"
 	StaticPrefix       = "/static/"
 	TemplatesDirectory = "templates/*.html"
+	DefaultDBHost      = "127.0.0.1"
+	DefaultDBPort      = "3306"
+	DefaultDBUser      = "root"
+	DefaultDBPassword  = ""
+	DefaultDBName      = "groupietracker"
 	
 	// HTTPS Configuration
 	CertFile = "server"
