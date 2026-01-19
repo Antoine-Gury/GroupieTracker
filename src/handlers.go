@@ -646,3 +646,23 @@ func (s *Server) HandleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
+
+// HandleLegalConditions affiche la page des conditions générales de vente
+func (s *Server) HandleLegalConditions(w http.ResponseWriter, r *http.Request) {
+	s.Render(w, "legal-conditions.html", nil)
+}
+
+// HandleLegalPrivacy affiche la page de politique de confidentialité
+func (s *Server) HandleLegalPrivacy(w http.ResponseWriter, r *http.Request) {
+	s.Render(w, "legal-privacy.html", nil)
+}
+
+// HandleLegalCookies affiche la page de politique des cookies
+func (s *Server) HandleLegalCookies(w http.ResponseWriter, r *http.Request) {
+	s.Render(w, "legal-cookies.html", nil)
+}
+
+// HandleLegalMentions affiche la page des mentions légales
+func (s *Server) HandleLegalMentions(w http.ResponseWriter, r *http.Request) {
+	s.Render(w, "legal-mentions.html", nil)
+}

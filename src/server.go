@@ -102,6 +102,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/update-role", RequireAdmin(s.HandleAdminUpdateUserRole))
 	mux.HandleFunc("/admin/users/delete", RequireAdmin(s.HandleAdminDeleteUser))
 	
+	// Handlers pages légales (accessibles à tous)
+	mux.HandleFunc("/legal/conditions", s.HandleLegalConditions)
+	mux.HandleFunc("/legal/privacy", s.HandleLegalPrivacy)
+	mux.HandleFunc("/legal/cookies", s.HandleLegalCookies)
+	mux.HandleFunc("/legal/mentions", s.HandleLegalMentions)
+	
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.Handle(StaticPrefix, http.StripPrefix(StaticPrefix, fileServer))
 
