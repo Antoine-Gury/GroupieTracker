@@ -6,25 +6,20 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-// GetSession récupère la session de la requête
 func GetSession(r *http.Request) (*sessions.Session, error) {
 	return store.Get(r, SessionName)
 }
 
-// SaveSession sauvegarde la session dans la réponse
 func SaveSession(w http.ResponseWriter, r *http.Request, session *sessions.Session) error {
 	return session.Save(r, w)
 }
 
-// SessionMiddleware est un middleware pour gérer les sessions
 func SessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// La session est accessible via GetSession() dans les handlers
 		next.ServeHTTP(w, r)
 	}
 }
 
-// IsAuthenticated vérifie si un utilisateur est connecté.
 func IsAuthenticated(r *http.Request) bool {
 	session, err := GetSession(r)
 	if err != nil {
@@ -34,7 +29,6 @@ func IsAuthenticated(r *http.Request) bool {
 	return ok
 }
 
-// RequireAuth redirige vers /login si l'utilisateur n'est pas connecté.
 func RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !IsAuthenticated(r) {
@@ -45,7 +39,6 @@ func RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// IsAdmin vérifie si l'utilisateur connecté est admin.
 func IsAdmin(r *http.Request) bool {
 	session, err := GetSession(r)
 	if err != nil {
@@ -62,7 +55,6 @@ func IsAdmin(r *http.Request) bool {
 	return user.Role == "admin"
 }
 
-// RequireAdmin redirige vers /home si l'utilisateur n'est pas admin.
 func RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !IsAuthenticated(r) {

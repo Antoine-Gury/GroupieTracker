@@ -15,7 +15,6 @@ import (
 )
 
 func (s *Server) HandleIndex(w http.ResponseWriter, r *http.Request) {
-	// Récupérer les informations de l'utilisateur connecté
 	var userProfile *UserProfile
 	if IsAuthenticated(r) {
 		session, _ := GetSession(r)
@@ -86,7 +85,6 @@ func (s *Server) HandleProfile(w http.ResponseWriter, r *http.Request) {
 	s.Render(w, "profile.html", data)
 }
 
-// getStringValue extrait la valeur d'un sql.NullString
 func getStringValue(ns sql.NullString) string {
 	if ns.Valid {
 		return ns.String
@@ -94,7 +92,6 @@ func getStringValue(ns sql.NullString) string {
 	return ""
 }
 
-// HandleRoot redirige vers la page de login pour forcer l'accès initial par l'auth.
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	if IsAuthenticated(r) {
 		http.Redirect(w, r, "/home", http.StatusSeeOther)
@@ -116,10 +113,8 @@ func (s *Server) HandleArtist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	locDates := BuildLocationDates(art.DatesLocations)
-	
-	// Géocoder les emplacements pour la carte
 	locationsCoords := GeocodeLocations(art.Locations, art.DatesLocations)
-	
+
 	data := ArtistPageData{
 		Artist:          art,
 		LocationDates:   locDates,
@@ -142,24 +137,23 @@ func (s *Server) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleGeocode(w http.ResponseWriter, r *http.Request) {
-	// API endpoint pour géocoder une adresse (optionnel, pour utilisation AJAX)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	address := r.URL.Query().Get("address")
 	if address == "" {
 		http.Error(w, "Paramètre 'address' manquant", http.StatusBadRequest)
 		return
 	}
-	
+
 	coords, err := GeocodeLocation(address)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(coords)
@@ -172,11 +166,11 @@ func (s *Server) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		ArtistID    int     `json:"artist_id"`
-		Location    string  `json:"location"`
-		Date        string  `json:"date"`
-		Quantity    int     `json:"quantity"`
-		Amount      float64 `json:"amount"`
+		ArtistID int     `json:"artist_id"`
+		Location string  `json:"location"`
+		Date     string  `json:"date"`
+		Quantity int     `json:"quantity"`
+		Amount   float64 `json:"amount"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -191,14 +185,12 @@ func (s *Server) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		req.Amount = DefaultTicketPrice * float64(req.Quantity)
 	}
 
-	// Récupérer les informations de l'artiste
 	art, ok := s.FindArtist(req.ArtistID)
 	if !ok {
 		http.Error(w, "Artiste non trouvé", http.StatusNotFound)
 		return
 	}
 
-	// Construire les URLs de retour
 	scheme := "https"
 	if r.TLS == nil {
 		scheme = "http"
@@ -209,7 +201,6 @@ func (s *Server) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	description := fmt.Sprintf("Billet pour %s - %s (%s)", art.Name, req.Location, req.Date)
 
-	// Créer la commande PayPal
 	order, err := CreatePayPalOrder(s.client, req.Amount, description, returnURL, cancelURL)
 	if err != nil {
 		log.Printf("Erreur création commande PayPal: %v", err)
@@ -217,7 +208,6 @@ func (s *Server) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Trouver l'URL d'approbation
 	var approveURL string
 	for _, link := range order.Links {
 		if link.Rel == "approve" {
@@ -254,7 +244,6 @@ func (s *Server) HandleCaptureOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Capturer le paiement
 	capture, err := CapturePayPalOrder(s.client, req.OrderID)
 	if err != nil {
 		log.Printf("Erreur capture PayPal: %v", err)
@@ -267,37 +256,32 @@ func (s *Server) HandleCaptureOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandlePayPalSuccess(w http.ResponseWriter, r *http.Request) {
-	// PayPal redirige avec 'token' dans les paramètres, pas 'order_id'
 	token := r.URL.Query().Get("token")
 	orderID := r.URL.Query().Get("order_id")
-	
-	// Si on a un token, on doit le convertir en order_id (le token EST l'order_id)
+
 	if token != "" && orderID == "" {
 		orderID = token
 	}
-	
+
 	if orderID == "" {
-		// Essayer de capturer depuis la session ou autres moyens
 		http.Error(w, "Informations de commande manquantes", http.StatusBadRequest)
 		return
 	}
 
-	// Capturer automatiquement le paiement
 	capture, err := CapturePayPalOrder(s.client, orderID)
 	if err != nil {
 		log.Printf("Erreur capture automatique PayPal: %v", err)
-		// Continuer quand même pour afficher la page
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	
+
 	statusMessage := "traitée avec succès"
 	if capture != nil && capture.Status == "COMPLETED" {
 		statusMessage = "payée et confirmée"
 	} else if err != nil {
 		statusMessage = "en attente de confirmation"
 	}
-	
+
 	fmt.Fprintf(w, `
 <!doctype html>
 <html lang="fr">
@@ -320,37 +304,51 @@ func (s *Server) HandlePayPalSuccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	// Si déjà connecté, aller directement sur l'accueil
 	if r.Method == http.MethodGet && IsAuthenticated(r) {
 		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}
 	if r.Method == http.MethodGet {
-		s.Render(w, "login.html", nil)
+		s.Render(w, "login.html", LoginPageData{})
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Erreur lors du traitement du formulaire",
+		})
 		return
 	}
 
 	email := strings.TrimSpace(r.FormValue("email"))
 	password := r.FormValue("password")
 
+	if email == "" || password == "" {
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Veuillez remplir tous les champs",
+		})
+		return
+	}
+
 	user, err := GetUserByEmail(DB, email)
 	if err != nil {
-		http.Error(w, "Email ou mot de passe incorrect", http.StatusUnauthorized)
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Email ou mot de passe incorrect",
+		})
 		return
 	}
 	if err := checkPassword(user.PasswordHash, password); err != nil {
-		http.Error(w, "Email ou mot de passe incorrect", http.StatusUnauthorized)
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Email ou mot de passe incorrect",
+		})
 		return
 	}
 
 	session, err := GetSession(r)
 	if err != nil {
-		http.Error(w, "Session indisponible", http.StatusInternalServerError)
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Erreur de session, veuillez réessayer",
+		})
 		return
 	}
 	session.Values["user_id"] = user.ID
@@ -358,7 +356,9 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	session.Values["username"] = user.Username
 	session.Values["role"] = user.Role
 	if err := SaveSession(w, r, session); err != nil {
-		http.Error(w, "Impossible de sauvegarder la session", http.StatusInternalServerError)
+		s.Render(w, "login.html", LoginPageData{
+			Error: "Impossible de sauvegarder la session",
+		})
 		return
 	}
 
@@ -390,7 +390,6 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-login après inscription
 	user, err := GetUserByEmail(DB, email)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -408,7 +407,6 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
-// HandleLogout déconnecte l'utilisateur
 func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
@@ -425,7 +423,6 @@ func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-// HandleUpdateProfile gère la mise à jour du profil utilisateur
 func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)
@@ -444,14 +441,12 @@ func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Créer le dossier uploads s'il n'existe pas
 	uploadDir := "static/uploads"
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		log.Printf("Erreur création dossier uploads: %v", err)
 	}
 
-	// Parser le formulaire multipart (pour les fichiers)
-	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB max
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Erreur parsing formulaire", http.StatusBadRequest)
 		return
 	}
@@ -484,7 +479,6 @@ func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Si pas de nouvelle photo mais qu'il y en a déjà une, garder l'ancienne
 	if photoProfil == "" {
 		user, err := GetUserByID(DB, userID)
 		if err == nil && user.PhotoProfil.Valid {
@@ -499,7 +493,6 @@ func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mettre à jour la session si le pseudo a changé
 	if pseudo != "" {
 		session.Values["username"] = pseudo
 		_ = SaveSession(w, r, session)
@@ -508,7 +501,6 @@ func (s *Server) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
-// HandleAdminUsers affiche la page de gestion des utilisateurs (admin seulement)
 func (s *Server) HandleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Méthode non supportée", http.StatusMethodNotAllowed)

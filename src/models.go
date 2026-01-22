@@ -83,3 +83,8 @@ type ArtistPageData struct {
 	LocationsCoords []LocationWithCoords
 	PayPalClientID  string
 }
+
+type LoginPageData struct {
+	Error   string
+	Message string
+}

@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -15,13 +16,12 @@ var (
 )
 
 func init() {
-	// Initialise le store de sessions avec une clé secrète
 	store = sessions.NewCookieStore([]byte(SessionSecret))
 	store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   SessionMaxAge,
 		HttpOnly: true,
-		Secure:   true, // Requiert HTTPS
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	}
 }
@@ -55,9 +55,6 @@ func NewServer() (*Server, error) {
 		},
 		"upper": strings.ToUpper,
 		"getString": func(ns interface{}) string {
-			// Helper pour extraire la valeur d'un sql.NullString dans les templates
-			// On ne peut pas directement accéder aux champs Valid/String dans les templates
-			// Cette fonction sera utilisée différemment - on va plutôt créer un type wrapper
 			return ""
 		},
 	}
@@ -77,8 +74,6 @@ func NewServer() (*Server, error) {
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
-	// Handlers avec support de sessions (accessible via GetSession() dans les handlers)
-	// Redirige la racine vers la page de login pour forcer l'auth en premier.
 	mux.HandleFunc("/", s.HandleRoot)
 	mux.HandleFunc("/login", s.HandleLogin)
 	mux.HandleFunc("/register", s.HandleRegister)
@@ -87,22 +82,14 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/artist", RequireAuth(s.HandleArtist))
 	mux.HandleFunc(RefreshPath, RequireAuth(s.HandleRefresh))
 	mux.HandleFunc("/api/geocode", RequireAuth(s.HandleGeocode))
-	
-	// Handlers PayPal
 	mux.HandleFunc("/api/paypal/create-order", RequireAuth(s.HandleCreateOrder))
 	mux.HandleFunc("/api/paypal/capture-order", RequireAuth(s.HandleCaptureOrder))
 	mux.HandleFunc("/paypal/success", RequireAuth(s.HandlePayPalSuccess))
-	
-	// Handler gestion de profil
 	mux.HandleFunc("/profile/update", RequireAuth(s.HandleUpdateProfile))
 	mux.HandleFunc("/logout", s.HandleLogout)
-	
-	// Handlers admin (gestion utilisateurs)
 	mux.HandleFunc("/admin/users", RequireAdmin(s.HandleAdminUsers))
 	mux.HandleFunc("/admin/users/update-role", RequireAdmin(s.HandleAdminUpdateUserRole))
 	mux.HandleFunc("/admin/users/delete", RequireAdmin(s.HandleAdminDeleteUser))
-	
-	// Handlers pages légales (accessibles à tous)
 	mux.HandleFunc("/legal/conditions", s.HandleLegalConditions)
 	mux.HandleFunc("/legal/privacy", s.HandleLegalPrivacy)
 	mux.HandleFunc("/legal/cookies", s.HandleLegalCookies)
@@ -117,10 +104,18 @@ func (s *Server) Start() error {
 		ReadHeaderTimeout: ReadHeaderTimeout,
 	}
 
-	log.Printf("Serveur HTTPS démarré sur https://localhost%s", ServerAddress)
-	log.Printf("Certificats utilisés: %s (cert) et %s (key)", CertFile, KeyFile)
-	log.Printf("Sessions Gorilla activées (nom: %s)", SessionName)
-	return server.ListenAndServeTLS(CertFile, KeyFile)
+	certExists := fileExists(CertFile)
+	keyExists := fileExists(KeyFile)
+	
+	if certExists && keyExists {
+		store.Options.Secure = true
+		log.Printf("Serveur lancé: https://localhost%s", ServerAddress)
+		return server.ListenAndServeTLS(CertFile, KeyFile)
+	} else {
+		store.Options.Secure = false
+		log.Printf("Serveur lancé: http://localhost%s", ServerAddress)
+		return server.ListenAndServe()
+	}
 }
 
 func (s *Server) RefreshData() error {
@@ -159,4 +154,9 @@ func (s *Server) Render(w http.ResponseWriter, name string, data interface{}) {
 		log.Printf("template %s failed: %v", name, err)
 		http.Error(w, "Une erreur est survenue", http.StatusInternalServerError)
 	}
+}
+
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
 }

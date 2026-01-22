@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// User représente un utilisateur authentifié.
 type User struct {
 	ID           int
 	Username     string
@@ -19,12 +18,11 @@ type User struct {
 	Pseudo       sql.NullString
 	Bio          sql.NullString
 	PhotoProfil  sql.NullString
-	Role         string // 'user' ou 'admin'
+	Role         string
 	CreatedAt    time.Time
 	UpdatedAt    sql.NullTime
 }
 
-// hashPassword génère un hash bcrypt pour le mot de passe.
 func hashPassword(password string) (string, error) {
 	const cost = 12
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), cost)
@@ -39,7 +37,6 @@ func checkPassword(hash string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-// CreateUser insère un nouvel utilisateur (email unique).
 func CreateUser(db *sql.DB, email, password string) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 	if email == "" {
@@ -61,7 +58,6 @@ func CreateUser(db *sql.DB, email, password string) error {
 
 	const query = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`
 	if _, err := db.Exec(query, username, email, hashed); err != nil {
-		// Détecter un doublon unique (code MySQL 1062)
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") {
 			return fmt.Errorf("un compte existe déjà avec cet email")
 		}
@@ -70,7 +66,6 @@ func CreateUser(db *sql.DB, email, password string) error {
 	return nil
 }
 
-// GetUserByEmail retourne un utilisateur par email.
 func GetUserByEmail(db *sql.DB, email string) (User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 	var u User
@@ -85,12 +80,11 @@ func GetUserByEmail(db *sql.DB, email string) (User, error) {
 	if role.Valid {
 		u.Role = role.String
 	} else {
-		u.Role = "user" // Par défaut
+		u.Role = "user"
 	}
 	return u, nil
 }
 
-// GetUserByID retourne un utilisateur par ID.
 func GetUserByID(db *sql.DB, id int) (User, error) {
 	var u User
 	var role sql.NullString
@@ -104,12 +98,11 @@ func GetUserByID(db *sql.DB, id int) (User, error) {
 	if role.Valid {
 		u.Role = role.String
 	} else {
-		u.Role = "user" // Par défaut
+		u.Role = "user"
 	}
 	return u, nil
 }
 
-// UpdateUserProfile met à jour le pseudo, bio et photo de profil d'un utilisateur.
 func UpdateUserProfile(db *sql.DB, userID int, pseudo, bio, photoProfil string) error {
 	const query = `UPDATE users SET pseudo = ?, bio = ?, photo_profil = ?, updated_at = NOW() WHERE id = ?`
 	_, err := db.Exec(query, pseudo, bio, photoProfil, userID)
@@ -119,7 +112,6 @@ func UpdateUserProfile(db *sql.DB, userID int, pseudo, bio, photoProfil string) 
 	return nil
 }
 
-// GetAllUsers retourne tous les utilisateurs (pour la gestion admin).
 func GetAllUsers(db *sql.DB) ([]User, error) {
 	rows, err := db.Query(`SELECT id, username, email, password_hash, pseudo, bio, photo_profil, role, created_at, updated_at FROM users ORDER BY created_at DESC`)
 	if err != nil {
@@ -144,7 +136,6 @@ func GetAllUsers(db *sql.DB) ([]User, error) {
 	return users, rows.Err()
 }
 
-// UpdateUserRole met à jour le rôle d'un utilisateur (admin seulement).
 func UpdateUserRole(db *sql.DB, userID int, role string) error {
 	if role != "user" && role != "admin" {
 		return fmt.Errorf("rôle invalide: %s", role)
@@ -157,7 +148,6 @@ func UpdateUserRole(db *sql.DB, userID int, role string) error {
 	return nil
 }
 
-// DeleteUser supprime un utilisateur (admin seulement).
 func DeleteUser(db *sql.DB, userID int) error {
 	const query = `DELETE FROM users WHERE id = ?`
 	_, err := db.Exec(query, userID)

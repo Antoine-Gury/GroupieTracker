@@ -22,27 +22,18 @@ const (
 	DefaultDBUser      = "root"
 	DefaultDBPassword  = ""
 	DefaultDBName      = "groupietracker"
-	
-	// HTTPS Configuration
-	CertFile = "server"
-	KeyFile  = "server.key"
-	
-	// Session Configuration
-	SessionName    = "groupietracker-session"
-	SessionSecret  = "change-me-to-a-random-secret-key-minimum-32-characters"
-	SessionMaxAge  = 86400 * 7 // 7 jours
-	
-	// Prix par défaut d'un billet (en EUR)
+	CertFile           = "server"
+	KeyFile            = "server.key"
+	SessionName        = "groupietracker-session"
+	SessionSecret      = "change-me-to-a-random-secret-key-minimum-32-characters"
+	SessionMaxAge      = 86400 * 7
 	DefaultTicketPrice = 50.00
 )
 
 var (
-	// PayPal Configuration
-	// Valeurs par défaut pour le développement (Sandbox)
-	// Pour la production, utilisez les variables d'environnement
 	PayPalClientID = getEnvOrDefault("PAYPAL_CLIENT_ID", "AYZTk4mq-RDQ1wx_cV8_OL8x6Z7DLwdIlVgh9VA1-hxIpVl90W0CsIx0LOPnPJhbZUUXtMYGl3005mPi")
 	PayPalSecret   = getEnvOrDefault("PAYPAL_SECRET", "EN_zEbAcKwJluLRQOUJEZbqUmVgRFYxtuy3gD5WoTuLozW8ptEQyp_6uqd3-_6NGQUQxI3h7-88jc-gq")
-	PayPalMode     = getEnvOrDefault("PAYPAL_MODE", "sandbox") // sandbox ou live
+	PayPalMode     = getEnvOrDefault("PAYPAL_MODE", "sandbox")
 	PayPalBaseURL  = "https://api-m.sandbox.paypal.com"
 )
 
